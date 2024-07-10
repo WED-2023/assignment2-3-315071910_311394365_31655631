@@ -3,41 +3,91 @@ var router = express.Router();
 const MySql = require("../routes/utils/MySql");
 const DButils = require("../routes/utils/DButils");
 const bcrypt = require("bcrypt");
+const user_utils = require("./utils/user_utils");
+
+
+// original!!!
+// router.post("/Register", async (req, res, next) => {
+//   try {
+//     // parameters exists
+//     // valid parameters
+//     // username exists
+//     let user_details = {
+//       username: req.body.username,
+//       firstname: req.body.firstname,
+//       lastname: req.body.lastname,
+//       country: req.body.country,
+//       password: req.body.password,
+//       email: req.body.email,
+//       profilePic: req.body.profilePic
+//     }
+//     let users = [];
+//     users = await DButils.execQuery("SELECT username from users");
+
+//     if (users.find((x) => x.username === user_details.username))
+//       throw { status: 409, message: "Username taken" };
+
+//     // add the new username
+//     let hash_password = bcrypt.hashSync(
+//       user_details.password,
+//       parseInt(process.env.bcrypt_saltRounds)
+//     );
+//     await DButils.execQuery(
+//       `INSERT INTO users VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
+//       '${user_details.country}', '${hash_password}', '${user_details.email}', '${user_details.profilePic}')`
+//     );
+//     res.status(201).send({ message: "user created", success: true });
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 router.post("/Register", async (req, res, next) => {
   try {
-    // parameters exists
-    // valid parameters
-    // username exists
-    let user_details = {
-      username: req.body.username,
-      firstname: req.body.firstname,
-      lastname: req.body.lastname,
-      country: req.body.country,
-      password: req.body.password,
-      email: req.body.email,
-      profilePic: req.body.profilePic
+    // Extract and validate user details
+    const { username, firstname, lastname, country, password, email, profilePic } = req.body;
+
+    // Validate that required parameters exist
+    if (!username || !firstname || !lastname || !country || !password || !email) {
+      throw { status: 400, message: "Missing required fields" };
     }
-    let users = [];
-    users = await DButils.execQuery("SELECT username from users");
 
-    if (users.find((x) => x.username === user_details.username))
+    let user_details = {
+      username,
+      firstname,
+      lastname,
+      country,
+      password,
+      email,
+      profilePic: profilePic || ''
+    };
+
+    // Check if the username already exists
+    const users = await DButils.execQuery("SELECT username FROM users WHERE username = ?", [username]);
+    if (users.length > 0) {
       throw { status: 409, message: "Username taken" };
+    }
 
-    // add the new username
+    // Hash the password
     let hash_password = bcrypt.hashSync(
       user_details.password,
       parseInt(process.env.bcrypt_saltRounds)
     );
+
+    // Insert the new user into the database
     await DButils.execQuery(
-      `INSERT INTO users VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
-      '${user_details.country}', '${hash_password}', '${user_details.email}')`
+      `INSERT INTO users (username, firstname, lastname, country, password, email, profilePic)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [user_details.username, user_details.firstname, user_details.lastname, user_details.country, hash_password, user_details.email, user_details.profilePic]
     );
-    res.status(201).send({ message: "user created", success: true });
+
+    res.status(201).send({ message: "User created", success: true });
   } catch (error) {
     next(error);
   }
 });
+
+
 
 router.post("/Login", async (req, res, next) => {
   try {
@@ -58,7 +108,11 @@ router.post("/Login", async (req, res, next) => {
     }
 
     // Set cookie
-    req.session.user_id = user.user_id;
+    req.session.user_id = user.user_id; 
+    if(req.session.user_id == undefined){
+      throw { status: 401, message: "User_id in undefined!" };
+    }
+    
 
 
     // return cookie
@@ -72,5 +126,6 @@ router.post("/Logout", function (req, res) {
   req.session.reset(); // reset the session info --> send cookie when  req.session == undefined!!
   res.send({ success: true, message: "logout succeeded" });
 });
+
 
 module.exports = router;

@@ -2,12 +2,21 @@ var mysql = require('mysql');
 require("dotenv").config();
 
 
+// const config={
+// connectionLimit:4,
+//   host: process.env.host,//"localhost"
+//   user: process.env.user,//"root"
+//   // password: "pass_root@123",
+//   password: "311394365",
+//   database:"mydb"
+// }
+
 const config={
-connectionLimit:4,
-  host: process.env.host,//"localhost"
-  user: process.env.user,//"root"
-  password: "pass_root@123",
-  database:"mydb"
+  connectionLimit:4,
+    host: "127.0.0.1",
+    user: "root",
+    password: "311394365",
+    database:"mydb"
 }
 const pool = new mysql.createPool(config);
 
@@ -44,10 +53,4 @@ const query = (sql, binding) => {
   });
 };
 module.exports = { pool, connection, query };
-
-
-
-
-
-
 
