@@ -7,6 +7,8 @@ const recipe_utils = require("./utils/recipes_utils");
 
 router.get("/", (req, res) => res.send("im here 2"));
 
+
+
 /**
  * Authenticate all incoming requests by middleware
  */
@@ -35,6 +37,16 @@ router.post('/favorites', async (req, res, next) => {
     res.status(200).send("The Recipe successfully saved as favorite");
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/lastSearch', async (req,res,next) => {
+  try{
+    const lastSearch = req.session.lastSearch;
+    console.log(lastSearch);
+    res.status(200).send(lastSearch);
+  } catch(error){
+    next(error); 
   }
 });
 
