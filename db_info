@@ -1,0 +1,35 @@
+Create tables
+
+// table for favorites recepies
+CREATE TABLE favorite_recipes (
+    user_id int NOT NULL,
+    recipe_id int NOT NULL,
+    PRIMARY KEY (user_id, recipe_id)
+)
+
+//table for user
+CREATE TABLE users (
+    user_id int NOT NULL AUTO_INCREMENT COMMENT 'User ID',
+    username varchar(45) NOT NULL COMMENT 'Username',
+    firstname varchar(45) DEFAULT NULL COMMENT 'First Name',
+    lastname varchar(45) DEFAULT NULL COMMENT 'Last Name',
+    country varchar(45) DEFAULT NULL COMMENT 'Country',
+    password varchar(100) DEFAULT NULL COMMENT 'Password',
+    email varchar(45) DEFAULT NULL COMMENT 'Email Address',
+    profilePic varchar(50) DEFAULT NULL COMMENT 'Profile Picture',
+    PRIMARY KEY (user_id),
+    UNIQUE KEY username_UNIQUE (username)
+)
+//example for insert query:
+INSERT INTO users (username, firstname, lastname, country, password, email, profilePic)
+VALUES ('oded', 'oded', 'oded', NULL, 'oded', NULL, NULL);
+
+
+
+//watched recepies
+CREATE TABLE watchedrecipes (
+    user_id INT NOT NULL COMMENT 'User ID',
+    recipe_id INT NOT NULL COMMENT 'Recipe ID',
+    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Watched Timestamp',
+    PRIMARY KEY (user_id, recipe_id)
+);
