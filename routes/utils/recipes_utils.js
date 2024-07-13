@@ -10,6 +10,32 @@ const user_utils = require("./user_utils");
  */
 
 
+async function getSearchRecipes(query, number, cuisine, diet, intolerance){
+    if(number === undefined){
+        number = 5;
+    }
+    let search_result = await getRecipesFromSearchAPI(query, number, cuisine, diet, intolerance) ;
+    return getRecipesPreviewDetails(search_result.results);
+    //return search_result.results.map((element) => element.id);
+}
+
+// get the recipes data from the spooncular API query search
+ async function getRecipesFromSearchAPI(searchQuery, searchNumber, searchCuisine, searchDiet, searchIntolerance) { 
+    const response = await axios.get(`${api_domain}/complexSearch`, {
+        params: {
+            query: searchQuery,
+            number: searchNumber,
+            cuisine: searchCuisine,
+            diet: searchDiet,
+            intolerances: searchIntolerance,
+            instructionsRequired: true,
+            addRecipeInformation: true,
+            apiKey: process.env.spooncular_apiKey,
+        },
+    });
+    return response.data;
+}
+
 async function getRecipeInformation(recipe_id) {
     return await axios.get(`${api_domain}/${recipe_id}/information`, {
         params: {
@@ -78,6 +104,7 @@ async function getThreeRandomRecipes(user_id) {
     //filter them that they have at least image and instruction
     // let filter_random_recipes = random_recipes.data.recipes.filter((random) => (random.instructions != "") && (random.image && random.image != ""));
     // if (filter_random_recipes.length < 3) {
+
     //     return getThreeRandomRecipes(user_id);
     // }
     // return random_recipes 
@@ -86,6 +113,7 @@ async function getThreeRandomRecipes(user_id) {
 
 //get recipe details from list of recipes
 async function getRecipesPreviewDetails(recipes_info, user_id) {
+    
     return await Promise.all(recipes_info.map(async (recipe_info) => {
         if (!recipe_info) {
             return null;
@@ -161,6 +189,7 @@ async function getRecipeFullDetails(recipe_id, user_id) {
     getThreeRandomRecipes,
     getRecipesPreviewDetails,
     getRecipeFullDetails,
+    getSearchRecipes,
     getRecipeDetailsToUser,
 
 };
