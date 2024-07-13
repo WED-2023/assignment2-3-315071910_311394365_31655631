@@ -91,6 +91,7 @@ router.post("/Register", async (req, res, next) => {
 
 router.post("/Login", async (req, res, next) => {
   try {
+    console.log("Login")
     // check that username exists
     const users = await DButils.execQuery("SELECT username FROM users");
     if (!users.find((x) => x.username === req.body.username))
@@ -109,6 +110,8 @@ router.post("/Login", async (req, res, next) => {
 
     // Set cookie
     req.session.user_id = user.user_id; 
+    req.session.lastSearch = "";
+    
     if(req.session.user_id == undefined){
       throw { status: 401, message: "User_id in undefined!" };
     }
