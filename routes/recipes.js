@@ -53,6 +53,31 @@ router.get("/:recipeId", async (req, res, next) => {
 });
 
 
+/**
+ * This path returns a full details of a recipe by its id
+ */
+router.get("/:recipeId/analyzedInstructions", async (req, res, next) => {
+  try {
+    const recipeInstructions = await recipes_utils.getRecipeFullInstructions(req.params.recipeId);
+    res.json(recipeInstructions);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+router.get("/:recipeId/formatted", async (req, res, next) => {
+  try {
+      const recipeId = req.params.recipeId;
+      const recipeDetails = await recipes_utils.getFormattedRecipeDetails(recipeId);
+      res.json(recipeDetails);
+  } catch (error) {
+      next(error);
+  }
+});
+
+
+
 
 module.exports = router;
 /**

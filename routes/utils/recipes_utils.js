@@ -45,6 +45,65 @@ async function getRecipeInformation(recipe_id) {
     });
 }
 
+async function getRecipeFullInstructions(recipe_id) {
+    const response = await axios.get(`${api_domain}/${recipe_id}/analyzedInstructions`, {
+        params: {
+            apiKey: process.env.spooncular_apiKey
+        }
+    });
+
+    const instructions = response.data;
+    const parsedInstructions = instructions.map(instruction => ({
+        name: instruction.name,
+        steps: instruction.steps.map(step => ({
+            number: step.number,
+            step: step.step,
+            ingredients: step.ingredients.map(ingredient => ({
+                id: ingredient.id,
+                name: ingredient.name,
+                localizedName: ingredient.localizedName,
+                image: ingredient.image
+            })),
+            equipment: step.equipment.map(equip => ({
+                id: equip.id,
+                name: equip.name,
+                localizedName: equip.localizedName,
+                image: equip.image
+            }))
+        }))
+    }));
+
+    const ingredients = [];
+    const equipment = [];
+    parsedInstructions.forEach(instruction => {
+        instruction.steps.forEach(step => {
+            step.ingredients.forEach(ingredient => {
+                if (!ingredients.some(i => i.id === ingredient.id)) {
+                    ingredients.push({
+                        id: ingredient.id,
+                        name: ingredient.name
+                    });
+                }
+            });
+            step.equipment.forEach(equip => {
+                if (!equipment.some(e => e.id === equip.id)) {
+                    equipment.push({
+                        id: equip.id,
+                        name: equip.name
+                    });
+                }
+            });
+        });
+    });
+
+    return {
+        parsedInstructions: parsedInstructions,
+        ingredients: ingredients,
+        equipment: equipment
+    };
+}
+
+
 
 
 async function getRecipeDetails(recipe_id) {
@@ -161,6 +220,7 @@ async function getRecipeFullDetails(recipe_id, user_id) {
     let {id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree,analyzedInstructions,extendedIngredients,servings} = recipe_info.data;
     // let isWatched = await user_utils.checkIsWatchedRecipe(user_id, id);
     let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+    // analyzedInstructions = getRecipeFullInstructions(recipe_id);
     let ingredients_dict = [];
     await Promise.all(extendedIngredients.map(async (element) => ingredients_dict.push({
         name: element.name,
@@ -183,6 +243,102 @@ async function getRecipeFullDetails(recipe_id, user_id) {
         } 
 }
 
+
+
+/**
+ * Get full recipe details in the required structure
+ * @param {number} recipe_id - ID of the recipe
+ * @returns {Object} - Formatted recipe details
+ */
+async function getFormattedRecipeDetails(recipe_id) {
+    try {
+        // Fetch recipe information
+        const recipe_info = await axios.get(`${api_domain}/${recipe_id}/information`, {
+            params: {
+                includeNutrition: false,
+                apiKey: process.env.spooncular_apiKey
+            }
+        });
+
+        // Extract relevant details
+        const { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree, analyzedInstructions, extendedIngredients, servings, summary } = recipe_info.data;
+
+        // Format ingredients
+        const ingredients = extendedIngredients.map(ingredient => ({
+            name: ingredient.name,
+            amount: ingredient.amount
+        }));
+
+        // Format instructions
+        const parsedInstructions = analyzedInstructions.map(instruction => ({
+            name: instruction.name,
+            steps: instruction.steps.map(step => ({
+                number: step.number,
+                step: step.step,
+                ingredients: step.ingredients.map(ingredient => ({
+                    id: ingredient.id,
+                    name: ingredient.name,
+                    localizedName: ingredient.localizedName,
+                    image: ingredient.image
+                })),
+                equipment: step.equipment.map(equip => ({
+                    id: equip.id,
+                    name: equip.name,
+                    localizedName: equip.localizedName,
+                    image: equip.image
+                })),
+                length: step.length ? {
+                    number: step.length.number,
+                    unit: step.length.unit
+                } : undefined
+            }))
+        }));
+
+        // Format ingredients and equipment for the top-level
+        const topIngredients = extendedIngredients.map(ingredient => ({
+            id: ingredient.id,
+            name: ingredient.name
+        }));
+
+        const topEquipment = analyzedInstructions.flatMap(instruction => 
+            instruction.steps.flatMap(step => step.equipment.map(equip => ({
+                id: equip.id,
+                name: equip.name
+            })))
+        ).filter((equip, index, self) => 
+            index === self.findIndex(e => e.id === equip.id)
+        );
+
+        // Format the final data structure
+        const formattedRecipeDetails = {
+            id,
+            title,
+            readyInMinutes,
+            image,
+            popularity: aggregateLikes,
+            vegan,
+            vegetarian,
+            glutenFree,
+            ingredients,
+            instructions: parsedInstructions,
+            servings,
+            isFavorite: false, // Assuming a default value, you can modify it based on your logic
+            parsedInstructions,
+            topIngredients,
+            topEquipment,
+            summary // Adding the summary field
+        };
+
+        return formattedRecipeDetails;
+    } catch (error) {
+        console.error(`Error fetching recipe details: ${error.message}`);
+        throw error;
+    }
+}
+
+
+
+
   module.exports = {
     getRecipeDetails,
     searchRecipe,
@@ -191,6 +347,8 @@ async function getRecipeFullDetails(recipe_id, user_id) {
     getRecipeFullDetails,
     getSearchRecipes,
     getRecipeDetailsToUser,
+    getRecipeFullInstructions,
+    getFormattedRecipeDetails
 
 };
 // exports.getRecipeDetails = getRecipeDetails;
