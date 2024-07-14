@@ -84,10 +84,18 @@ router.get('/favorites', async (req, res, next) => {
     let recipes_id_array = [];
     let recipes_favorites = [];
 
-    recipes_id.map((element) => recipes_id_array.push(element.recipe_id)); // Extracting the recipe ids into array
+    // Extracting the recipe ids into array
+    recipes_id.map((element) => recipes_id_array.push(element.recipe_id));
 
     for (let i = 0; i < recipes_id_array.length; i++) {
-      let recipe_details = await recipe_utils.getRecipeDetailsToUser(user_id, recipes_id_array[i]);
+      let recipe_details;
+
+      if (Number.isInteger(Number(recipes_id_array[i]))) {
+        recipe_details = await recipe_utils.getRecipeDetailsToUser(user_id, recipes_id_array[i]);
+      } else {
+        recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
+      }
+
       recipes_favorites.push(recipe_details);
     }
 
@@ -97,9 +105,6 @@ router.get('/favorites', async (req, res, next) => {
     next(error);
   }
 });
-
-
-
 
 
 
@@ -175,5 +180,110 @@ router.get('/my_recipes/:recipeId', async (req, res, next) => {
     next(error);
   }
 });
+
+
+/**
+ * POST /meal_plan - Add a new recipe to the user's meal plan
+ */
+router.post('/meal_plan', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    const recipe_id = req.body.recipeId;
+    await user_utils.addRecipeToMealPlan(user_id, recipe_id);
+
+    res.status(201).send("Recipe added to meal plan successfully");
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /meal_plan - Retrieve all recipes in the user's meal plan
+ */
+router.get('/meal_plan', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    const recipes_id = await user_utils.getMealPlanRecipes(user_id);
+    let recipes_id_array = [];
+    let recipes_meal_plan = [];
+
+    // Extracting the recipe ids into an array
+    recipes_id.map((element) => recipes_id_array.push(element.recipe_id));
+
+    for (let i = 0; i < recipes_id_array.length; i++) {
+      let recipe_details;
+
+      if (Number.isInteger(Number(recipes_id_array[i]))) {
+        recipe_details = await recipe_utils.getRecipeDetailsToUser(user_id, recipes_id_array[i]);
+      } else {
+        recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
+      }
+
+      recipes_meal_plan.push(recipe_details);
+    }
+
+    res.status(200).send(recipes_meal_plan);
+  } catch (error) {
+    console.error("Error fetching meal plan recipes:", error);
+    next(error);
+  }
+});
+
+
+/**
+ * DELETE /meal_plan - Remove a recipe from the user's meal plan
+ */
+router.delete('/meal_plan', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.body.recipeId;
+
+    // Ensure the user is logged in
+    if (!user_id) {
+      throw { status: 402, message: "User not logged in" };
+    }
+
+    // Remove the recipe from the meal plan
+    await user_utils.removeRecipeFromMealPlan(user_id, recipe_id);
+    
+    res.status(200).send("The Recipe was successfully removed from the meal plan");
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /meal_plan/all - Remove all recipes from the user's meal plan
+ */
+router.delete('/meal_plan/all', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    // Ensure the user is logged in
+    if (!user_id) {
+      throw { status: 402, message: "User not logged in" };
+    }
+
+    // Remove all recipes from the meal plan
+    await user_utils.removeAllRecipesFromMealPlan(user_id);
+    
+    res.status(200).send("All recipes were successfully removed from the meal plan");
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+
 
 module.exports = router;

@@ -75,6 +75,36 @@ async function getMyRecipeByRecipeID(user_id, recipe_id) {
   }
 
   
+  async function addRecipeToMealPlan(user_id, recipe_id) {
+    await DButils.execQuery(
+        `INSERT INTO user_recipes_meal (user_id, recipe_id) VALUES (?, ?)`,
+        [user_id, recipe_id]
+    );
+}
+
+async function getMealPlanRecipes(user_id) {
+    const recipes_id = await DButils.execQuery(
+        `SELECT recipe_id FROM user_recipes_meal WHERE user_id = ?`,
+        [user_id]
+    );
+    return recipes_id;
+}
+
+async function removeRecipeFromMealPlan(user_id, recipe_id) {
+    await DButils.execQuery(
+        `DELETE FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
+        [user_id, recipe_id]
+    );
+}
+
+async function removeAllRecipesFromMealPlan(user_id) {
+    await DButils.execQuery(
+        `DELETE FROM user_recipes_meal WHERE user_id = ?`,
+        [user_id]
+    );
+}
+
+
 exports.markAsFavorite = markAsFavorite;
 exports.getFavoriteRecipes = getFavoriteRecipes;
 exports.removeFavorite = removeFavorite;
@@ -82,6 +112,11 @@ exports.checkIsFavoriteRecipe = checkIsFavoriteRecipe;
 exports.addPersonalRecipe = addPersonalRecipe;
 exports.getPersonalRecipes = getPersonalRecipes;
 exports.getMyRecipeByRecipeID = getMyRecipeByRecipeID;
+exports.addRecipeToMealPlan = addRecipeToMealPlan;
+exports.getMealPlanRecipes = getMealPlanRecipes;
+exports.removeRecipeFromMealPlan = removeRecipeFromMealPlan;
+exports.removeAllRecipesFromMealPlan = removeAllRecipesFromMealPlan;
+
 
 
 
