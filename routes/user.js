@@ -126,4 +126,54 @@ router.delete('/favorites', async (req, res, next) => {
 });
 
 
+/**
+ * POST /my_recipes - Add a new recipe to the user's personal collection
+ */
+router.post('/my_recipes', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    const recipe = req.body;
+    await user_utils.addPersonalRecipe(user_id, recipe);
+
+    res.status(201).send("Recipe added successfully");
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /my_recipes - Retrieve all personal recipes of the logged-in user
+ */
+router.get('/my_recipes', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    const recipes = await user_utils.getPersonalRecipes(user_id);
+    res.status(200).send(recipes);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+router.get('/my_recipes/:recipeId', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.params.recipeId;
+    const recipe = await user_utils.getMyRecipeByRecipeID(user_id, recipe_id);
+    res.status(200).send(recipe);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
