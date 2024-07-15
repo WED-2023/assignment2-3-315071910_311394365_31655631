@@ -26,13 +26,46 @@ async function checkIsFavoriteRecipe(user_id, recipe_id){
 }
 
 async function addPersonalRecipe(user_id, recipe) {
-    const {title, readyInMinutes, image, popularity, vegan, vegetarian, glutenFree, servings, ingredients, instructions } = recipe;
-    await DButils.execQuery(
-      `INSERT INTO user_recipes (user_id, title, readyInMinutes, image, popularity, vegan, vegetarian, glutenFree, servings, ingredients, instructions)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, title, readyInMinutes, image, popularity, vegan, vegetarian, glutenFree, servings, JSON.stringify(ingredients), JSON.stringify(instructions)]
-    );
+  const {
+    title,
+    readyInMinutes,
+    image,
+    popularity,
+    vegan,
+    vegetarian,
+    glutenFree,
+    servings,
+    ingredients,
+    instructions,
+    parsedInstructions,
+    topIngredients,
+    topEquipment,
+    summary
+  } = recipe;
+
+  await DButils.execQuery(
+    `INSERT INTO user_recipes (user_id, title, readyInMinutes, image, popularity, vegan, vegetarian, glutenFree, servings, ingredients, instructions, parsedInstructions, topIngredients, topEquipment, summary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      user_id,
+      title,
+      readyInMinutes,
+      image,
+      popularity,
+      vegan,
+      vegetarian,
+      glutenFree,
+      servings,
+      JSON.stringify(ingredients),
+      JSON.stringify(instructions),
+      JSON.stringify(parsedInstructions),
+      JSON.stringify(topIngredients),
+      JSON.stringify(topEquipment),
+      summary
+    ]
+  );
 }
+
 
 async function getPersonalRecipes(user_id) {
     const personal_recipes = await DButils.execQuery(`SELECT * FROM user_recipes WHERE user_id = ?`, [user_id]);
@@ -53,7 +86,7 @@ async function getPersonalRecipes(user_id) {
     })));
   }
 
-async function getMyRecipeByRecipeID(user_id, recipe_id) {
+  async function getMyRecipeByRecipeID(user_id, recipe_id) {
     const recipe = await DButils.execQuery(`SELECT * FROM user_recipes WHERE user_id = ? AND recipe_id = ?`, [user_id, recipe_id]);
     if (recipe.length === 0) {
       throw { status: 404, message: "Recipe not found" };
@@ -68,12 +101,17 @@ async function getMyRecipeByRecipeID(user_id, recipe_id) {
       vegan: recipe_details.vegan == 1,
       vegetarian: recipe_details.vegetarian == 1,
       glutenFree: recipe_details.glutenFree == 1,
+      servings: recipe_details.servings,
       ingredients: JSON.parse(recipe_details.ingredients),
       instructions: JSON.parse(recipe_details.instructions),
-      servings: recipe_details.servings,
+      parsedInstructions: JSON.parse(recipe_details.parsedInstructions),
+      topIngredients: JSON.parse(recipe_details.topIngredients),
+      topEquipment: JSON.parse(recipe_details.topEquipment),
+      summary: recipe_details.summary,
       isFavorite: await checkIsFavoriteRecipe(user_id, recipe_details.recipe_id)
     };
   }
+  
 
   
   async function addRecipeToMealPlan(user_id, recipe_id) {
