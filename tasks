@@ -1,0 +1,15 @@
+1. fix the 15 search
+2. add table for lastwatched recipes indication in the recipe preview display, and the list in the main page.
+3. add unit in recipeViewPage in display
+4. fix the indication of favorite button in the previwRecipe mode
+5. arrange the family recipe with good rcipes, (check if it needs to be involve with the bonus)
+6. fix updaye amount of recipe in 'my meal plan' - update in live while add/ delete.
+7. update the status and progress after start in recipe preperation.
+8. check the order of recipe in 'my meal plan' are truly saved.
+9. check about login and logout in the bonus thing.
+10. chekc with amit and erez about the bonus.
+11. improve the look of the search page - way better.
+12. check if 'watched' sign should be saved or not after logout and than login again.
+13. verify users button by the istructions document of the project.
+14. in the end of the work, read again the instructions document and do verify of the tasks.
+15. full wesite check - after outsie server upload success.
