@@ -1,5 +1,6 @@
 const DButils = require("./DButils");
 
+
 async function markAsFavorite(user_id, recipe_id){
     await DButils.execQuery(`insert into favorite_recipes values ('${user_id}',${recipe_id})`);
 }
@@ -104,6 +105,14 @@ async function removeAllRecipesFromMealPlan(user_id) {
     );
 }
 
+async function checkIsInMeal(user_id, recipe_id) {
+    const rows = await DButils.execQuery(
+      'SELECT * FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?',
+      [user_id, recipe_id]
+    );
+    return rows.length > 0;
+  }
+
 
 exports.markAsFavorite = markAsFavorite;
 exports.getFavoriteRecipes = getFavoriteRecipes;
@@ -116,6 +125,7 @@ exports.addRecipeToMealPlan = addRecipeToMealPlan;
 exports.getMealPlanRecipes = getMealPlanRecipes;
 exports.removeRecipeFromMealPlan = removeRecipeFromMealPlan;
 exports.removeAllRecipesFromMealPlan = removeAllRecipesFromMealPlan;
+exports.checkIsInMeal = checkIsInMeal;
 
 
 
