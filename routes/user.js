@@ -229,7 +229,7 @@ router.get('/meal_plan', async (req, res, next) => {
         recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
       }
 
-      recipe_details['status'] = (await user_utils.getRecipeStatusToMealPlan(user_id, recipe_details.id))[0].recipe_status.toString();
+      recipe_details['preperation_status'] = (await user_utils.getRecipeStatusToMealPlan(user_id, recipe_details.id))[0].recipe_status.toString();
       recipe_details['progress'] = (await user_utils.getRecipeProgressToMealPlan(user_id, recipe_details.id))[0].progress;
       // recipe_details['step'] = (await user_utils.getRecipeStepProgress(user_id, recipe_details.id))[0].step;
       // recipe_details['serving'] = (await user_utils.getRecipeServingAmount(user_id, recipe_details.id))[0].serving;
@@ -387,6 +387,22 @@ router.get('/meal_plan/count', async (req, res, next) => {
     next(error);
   }
 });
+
+
+router.post('/resetAllMealPlan', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    // Reset all meal progress and steps for the user
+    await user_utils.resetAllMealProgressForUser(user_id);
+
+    // Send a success response
+    res.status(200).send({ success: true, message: "All meal progress and steps reset successfully" });
+  } catch (error) {
+    next(error); // Pass error to the global error handler
+  }
+});
+
 
 
 

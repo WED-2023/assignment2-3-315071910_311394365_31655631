@@ -218,6 +218,20 @@ async function setRecipeProgress(user_id, recipeId, progress) {
 }
 
 
+async function resetAllMealProgressForUser(user_id) {
+  try {
+    await DButils.execQuery(
+      `UPDATE user_recipes_meal 
+       SET step = 0, progress = 0 
+       WHERE user_id = ?`,
+      [user_id]
+    );
+    return { success: true, message: "All meal progress and steps reset successfully" };
+  } catch (error) {
+    console.error("Error resetting meal progress and steps:", error);
+    throw error; // Re-throw the error to handle it in the calling function
+  }
+}
 
 
 
@@ -263,3 +277,4 @@ exports.getRecipeStepProgress = getRecipeStepProgress;
 exports.getRecipeServingAmount = getRecipeServingAmount;
 exports.setRecipeStepProgress = setRecipeStepProgress;
 exports.setRecipeProgress = setRecipeProgress;
+exports.resetAllMealProgressForUser = resetAllMealProgressForUser;
