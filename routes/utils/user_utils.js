@@ -129,6 +129,98 @@ async function getMealPlanRecipes(user_id) {
     return recipes_id;
 }
 
+async function getRecipeStatusToMealPlan(user_id, recipeId) {
+  const recipeStatus = await DButils.execQuery(
+      `SELECT recipe_status FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
+      [user_id, recipeId]
+  );
+  return recipeStatus;
+}
+
+async function getRecipeProgressToMealPlan(user_id, recipeId) {
+  const progress = await DButils.execQuery(
+      `SELECT progress FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
+      [user_id, recipeId]
+  );
+  return progress;
+}
+
+async function getRecipeStepProgress(user_id, recipeId) {
+  try {
+    const result = await DButils.execQuery(
+      `SELECT step FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
+      [user_id, recipeId]
+    );
+    
+    if (result.length > 0) {
+      return result[0]; // Return the object containing the 'step' key
+    } else {
+      throw { status: 404, message: "Recipe not found in meal plan" };
+    }
+  } catch (error) {
+    throw error; // Propagate the error to be handled by the calling function
+  }
+}
+
+
+async function getRecipeServingAmount(user_id, recipeId) {
+  const serving = await DButils.execQuery(
+      `SELECT sreving FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
+      [user_id, recipeId]
+  );
+  return serving;
+}
+
+async function setRecipeStatusInMealPlan(user_id, recipeId, status) {
+  try {
+    await DButils.execQuery(
+      `UPDATE user_recipes_meal 
+       SET recipe_status = ? 
+       WHERE user_id = ? AND recipe_id = ?`,
+      [status, user_id, recipeId]
+    );
+    return { success: true, message: "Recipe status updated successfully" };
+  } catch (error) {
+    console.error("Error updating recipe status:", error);
+    throw error; // Re-throw the error to handle it in the calling function
+  }
+}
+
+async function setRecipeStepProgress(user_id, recipeId, curr_step) {
+  try {
+    await DButils.execQuery(
+      `UPDATE user_recipes_meal 
+       SET step = ? 
+       WHERE user_id = ? AND recipe_id = ?`,
+      [curr_step, user_id, recipeId]
+    );
+    return { success: true, message: "Recipe step progress updated successfully" };
+  } catch (error) {
+    console.error("Error updating step progress status:", error);
+    throw error; // Re-throw the error to handle it in the calling function
+  }
+}
+
+
+async function setRecipeProgress(user_id, recipeId, progress) {
+  try {
+    await DButils.execQuery(
+      `UPDATE user_recipes_meal 
+       SET progress = ? 
+       WHERE user_id = ? AND recipe_id = ?`,
+      [progress, user_id, recipeId]
+    );
+    return { success: true, message: "Recipe progress updated successfully" };
+  } catch (error) {
+    console.error("Error updating progress status:", error);
+    throw error; // Re-throw the error to handle it in the calling function
+  }
+}
+
+
+
+
+
 async function removeRecipeFromMealPlan(user_id, recipe_id) {
     await DButils.execQuery(
         `DELETE FROM user_recipes_meal WHERE user_id = ? AND recipe_id = ?`,
@@ -164,7 +256,10 @@ exports.getMealPlanRecipes = getMealPlanRecipes;
 exports.removeRecipeFromMealPlan = removeRecipeFromMealPlan;
 exports.removeAllRecipesFromMealPlan = removeAllRecipesFromMealPlan;
 exports.checkIsInMeal = checkIsInMeal;
-
-
-
-
+exports.getRecipeStatusToMealPlan = getRecipeStatusToMealPlan;
+exports.getRecipeProgressToMealPlan = getRecipeProgressToMealPlan;
+exports.setRecipeStatusInMealPlan = setRecipeStatusInMealPlan;
+exports.getRecipeStepProgress = getRecipeStepProgress;
+exports.getRecipeServingAmount = getRecipeServingAmount;
+exports.setRecipeStepProgress = setRecipeStepProgress;
+exports.setRecipeProgress = setRecipeProgress;

@@ -229,6 +229,10 @@ router.get('/meal_plan', async (req, res, next) => {
         recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
       }
 
+      recipe_details['status'] = (await user_utils.getRecipeStatusToMealPlan(user_id, recipe_details.id))[0].recipe_status.toString();
+      recipe_details['progress'] = (await user_utils.getRecipeProgressToMealPlan(user_id, recipe_details.id))[0].progress;
+      // recipe_details['step'] = (await user_utils.getRecipeStepProgress(user_id, recipe_details.id))[0].step;
+      // recipe_details['serving'] = (await user_utils.getRecipeServingAmount(user_id, recipe_details.id))[0].serving;
       recipes_meal_plan.push(recipe_details);
     }
 
@@ -238,6 +242,86 @@ router.get('/meal_plan', async (req, res, next) => {
     next(error);
   }
 });
+
+
+// Route to get the step value for a recipe in the user's meal plan
+router.get('/meal_plan/:recipeId/step', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id; // Assume user is authenticated and session contains user_id
+    const recipe_id = req.params.recipeId;
+
+    // Fetch the step value using the utility function
+    const stepResult = await user_utils.getRecipeStepProgress(user_id, recipe_id);
+    const step = stepResult.step; // Extract the step value
+
+    res.status(200).send({ step });
+  } catch (error) {
+    next(error); // Pass the error to the error-handling middleware
+  }
+});
+
+
+router.post('/meal_plan/:recipeId/:status', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.params.recipeId;
+    const status = parseInt(req.params.status, 10); // Convert status to an integer
+
+    // Validate status (assuming valid statuses are 0, 1, or 2)
+    if (![0, 1, 2].includes(status)) {
+      return res.status(400).send({ error: "Invalid status value" });
+    }
+
+    // Update the recipe status in the meal plan
+    await user_utils.setRecipeStatusInMealPlan(user_id, recipe_id, status);
+    
+    res.status(200).send({ success: true, message: "Recipe status updated successfully" });
+  } catch (error) {
+    next(error); // Pass error to the global error handler
+  }
+});
+
+
+router.post('/meal_plan/:recipeId/step/:step', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.params.recipeId;
+    const step = parseInt(req.params.step, 10); // Convert step to an integer
+
+    if (isNaN(step)) {
+      return res.status(400).send({ error: "Invalid step value" });
+    }
+
+    // Update the recipe step in the meal plan
+    await user_utils.setRecipeStepProgress(user_id, recipe_id, step);
+    
+    res.status(200).send({ success: true, message: "Recipe step progress updated successfully" });
+  } catch (error) {
+    next(error); // Pass error to the global error handler
+  }
+});
+
+
+router.post('/meal_plan/:recipeId/progress/:progress', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    const recipe_id = req.params.recipeId;
+    const progress = parseFloat(req.params.progress); // Convert progress to a float
+
+    if (isNaN(progress) || progress < 0 || progress > 1) {
+      return res.status(400).send({ error: "Invalid progress value" });
+    }
+
+    // Update the recipe progress in the meal plan
+    await user_utils.setRecipeProgress(user_id, recipe_id, progress);
+    
+    res.status(200).send({ success: true, message: "Recipe progress updated successfully" });
+  } catch (error) {
+    next(error); // Pass error to the global error handler
+  }
+});
+
+
 
 
 /**
@@ -282,6 +366,28 @@ router.delete('/meal_plan/all', async (req, res, next) => {
     next(error);
   }
 });
+
+// return the amount of recipes in meal by user.
+router.get('/meal_plan/count', async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    // Check if the user is logged in
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    // Get the list of recipe IDs in the user's meal plan
+    const recipes_id = await user_utils.getMealPlanRecipes(user_id);
+
+    // Return the count of recipes
+    res.status(200).send({ mealPlanCount: recipes_id.length });
+  } catch (error) {
+    console.error("Error fetching meal plan count:", error);
+    next(error);
+  }
+});
+
 
 
 module.exports = router;

@@ -1,4 +1,4 @@
-var mysql = require('mysql');
+var mysql = require('mysql2');
 require("dotenv").config();
 
 
@@ -12,8 +12,9 @@ require("dotenv").config();
 // }
 
 const config={
-  connectionLimit:4,
-    host: "127.0.0.1",
+  connectionLimit:4,//////////////////////////////////////////////////////////////////////
+    // host: "amit-barak-oded.cs.bgu.ac.il",
+    host: "localhost",
     user: "root",
     password: "311394365",
     database:"mydb"
