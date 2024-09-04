@@ -1,6 +1,7 @@
 const axios = require("axios");
 const api_domain = "https://api.spoonacular.com/recipes";
 const user_utils = require("./user_utils");
+const DButils = require("./DButils");
 
 
 
@@ -143,6 +144,45 @@ async function getRecipeDetailsToUser(user_id, recipe_id) {
     }
 }
 
+
+async function getFamilyRecipeDetailsToUser(user_id, recipe_id) {
+    try {
+        // Fetch the recipe information stored as JSON in the 'information' column
+        const recipeQuery = `SELECT information FROM family_recipes WHERE recipe_id='${recipe_id}'`;
+        let recipe_info = await DButils.execQuery(recipeQuery);
+
+        // Check if any rows were returned
+        if (!recipe_info || !recipe_info.length) {
+            throw new Error(`Recipe with id ${recipe_id} not found or has no information.`);
+        }
+
+        // Extract the JSON data from the query result
+        const information = recipe_info[0].information;
+        let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = information;  // Updated to use `information`
+        
+        // Check if the recipe is a favorite for the user
+        let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+
+        // Return the processed recipe details
+        return {
+            id: id,
+            title: title,
+            readyInMinutes: readyInMinutes,
+            image: image,
+            popularity: aggregateLikes,
+            vegan: vegan,
+            vegetarian: vegetarian,
+            glutenFree: glutenFree,
+            favorite: isFavorite
+        };
+    } catch (error) {
+        // Handle any errors that occur during the process
+        console.error(`Error fetching recipe details: ${error.message}`);
+        throw error; // Rethrow the error to be handled by the caller if necessary
+    }
+}
+
+
 async function searchRecipe(recipeName, cuisine, diet, intolerance, number, username) {
     const response = await axios.get(`${api_domain}/complexSearch`, {
         params: {
@@ -215,6 +255,75 @@ return response;
 }
 
 
+async function getFamilyRecipeFullDetails(recipe_id, user_id) {
+    try {
+        // Fetch the recipe information stored as JSON in the 'information' column
+        const recipeQuery = `SELECT information FROM family_recipes WHERE recipe_id='${recipe_id}'`;
+        const recipe_info = await DButils.execQuery(recipeQuery);
+
+        // Check if any rows were returned
+        if (!recipe_info || !recipe_info.length) {
+            throw new Error(`Recipe with id ${recipe_id} not found or has no information.`);
+        }
+
+        // Extract the JSON data from the query result
+        const information = recipe_info[0].information;
+
+        // Extract specific fields from the JSON data
+        let {
+            id = recipe_id, // Use recipe_id as a fallback if id is not present in JSON
+            title,
+            readyInMinutes,
+            image,
+            aggregateLikes,
+            vegan,
+            vegetarian,
+            glutenFree,
+            analyzedInstructions,
+            extendedIngredients,
+            servings
+        } = information;
+
+        // Check if the recipe is a favorite or in the user's meal plan
+        let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+        let inMyMeal = await user_utils.checkIsInMeal(user_id, id);
+
+        // Construct the ingredients list
+        let ingredients_dict = [];
+        await Promise.all(extendedIngredients.map(async (element) => {
+            ingredients_dict.push({
+                name: element.name,
+                amount: element.amount,
+                unit: element.measures?.us?.unitShort || '' // Fallback to empty string if unit is not available
+            });
+        }));
+
+        // Return the full recipe details
+        return {
+            id: id,
+            title: title,
+            readyInMinutes: readyInMinutes,
+            image: image,
+            popularity: aggregateLikes,
+            vegan: vegan,
+            vegetarian: vegetarian,
+            glutenFree: glutenFree,
+            ingredients: ingredients_dict,
+            instructions: analyzedInstructions,
+            servings: servings,
+            isFavorite: isFavorite,
+            inMyMeal: inMyMeal
+        };
+    } catch (error) {
+        console.error(`Error fetching recipe details: ${error.message}`);
+        return { success: false, message: error.message };
+    }
+}
+
+
+
+
+
 
 
 
@@ -230,6 +339,7 @@ async function getRecipeFullDetails(recipe_id, user_id) {
     await Promise.all(extendedIngredients.map(async (element) => ingredients_dict.push({
         name: element.name,
         amount: element.amount,
+        unit: element.measures.us.unitShort
     })))
         return {
             id: id,
@@ -272,7 +382,8 @@ async function getFormattedRecipeDetails(recipe_id) {
         // Format ingredients
         const ingredients = extendedIngredients.map(ingredient => ({
             name: ingredient.name,
-            amount: ingredient.amount
+            amount: ingredient.amount,
+            unit: ingredient.measures.us.unitShort
         }));
 
         // Format instructions
@@ -303,7 +414,101 @@ async function getFormattedRecipeDetails(recipe_id) {
         // Format ingredients and equipment for the top-level
         const topIngredients = extendedIngredients.map(ingredient => ({
             id: ingredient.id,
-            name: ingredient.name
+            name: ingredient.name,
+            unit: ingredient.measures.us.unitShort
+        }));
+
+        const topEquipment = analyzedInstructions.flatMap(instruction => 
+            instruction.steps.flatMap(step => step.equipment.map(equip => ({
+                id: equip.id,
+                name: equip.name
+            })))
+        ).filter((equip, index, self) => 
+            index === self.findIndex(e => e.id === equip.id)
+        );
+
+        // Format the final data structure
+        const formattedRecipeDetails = {
+            id,
+            title,
+            readyInMinutes,
+            image,
+            popularity: aggregateLikes,
+            vegan,
+            vegetarian,
+            glutenFree,
+            ingredients,
+            instructions: parsedInstructions,
+            servings,
+            isFavorite: false, // Assuming a default value, you can modify it based on your logic
+            parsedInstructions,
+            topIngredients,
+            topEquipment,
+            summary // Adding the summary field
+        };
+
+        return formattedRecipeDetails;
+    } catch (error) {
+        console.error(`Error fetching recipe details: ${error.message}`);
+        throw error;
+    }
+}
+
+
+async function getFormattedFamilyRecipeDetails(recipe_id) {
+    try {
+         // Fetch the recipe information stored as JSON in the 'information' column
+         const recipeQuery = `SELECT information FROM family_recipes WHERE recipe_id='${recipe_id}'`;
+         const recipe_info = await DButils.execQuery(recipeQuery);
+ 
+         // Check if any rows were returned
+         if (!recipe_info || !recipe_info.length) {
+             throw new Error(`Recipe with id ${recipe_id} not found or has no information.`);
+         }
+ 
+         // Extract the JSON data from the query result
+         const information = recipe_info[0].information;
+
+        // Extract relevant details
+        const { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree, analyzedInstructions, extendedIngredients, servings, summary } = information;
+
+        // Format ingredients
+        const ingredients = extendedIngredients.map(ingredient => ({
+            name: ingredient.name,
+            amount: ingredient.amount,
+            unit: ingredient.measures.us.unitShort
+        }));
+
+        // Format instructions
+        const parsedInstructions = analyzedInstructions.map(instruction => ({
+            name: instruction.name,
+            steps: instruction.steps.map(step => ({
+                number: step.number,
+                step: step.step,
+                ingredients: step.ingredients.map(ingredient => ({
+                    id: ingredient.id,
+                    name: ingredient.name,
+                    localizedName: ingredient.localizedName,
+                    image: ingredient.image
+                })),
+                equipment: step.equipment.map(equip => ({
+                    id: equip.id,
+                    name: equip.name,
+                    localizedName: equip.localizedName,
+                    image: equip.image
+                })),
+                length: step.length ? {
+                    number: step.length.number,
+                    unit: step.length.unit
+                } : undefined
+            }))
+        }));
+
+        // Format ingredients and equipment for the top-level
+        const topIngredients = extendedIngredients.map(ingredient => ({
+            id: ingredient.id,
+            name: ingredient.name,
+            unit: ingredient.measures.us.unitShort
         }));
 
         const topEquipment = analyzedInstructions.flatMap(instruction => 
@@ -354,7 +559,11 @@ async function getFormattedRecipeDetails(recipe_id) {
     getSearchRecipes,
     getRecipeDetailsToUser,
     getRecipeFullInstructions,
-    getFormattedRecipeDetails
+    getFormattedRecipeDetails,
+    getRecipeInformation,
+    getFamilyRecipeFullDetails,
+    getFormattedFamilyRecipeDetails,
+    getFamilyRecipeDetailsToUser
 
 };
 // exports.getRecipeDetails = getRecipeDetails;

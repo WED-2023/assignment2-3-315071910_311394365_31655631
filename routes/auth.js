@@ -42,6 +42,33 @@ const user_utils = require("./utils/user_utils");
 //   }
 // });
 
+
+router.get("/check-username", async (req, res, next) => {
+  try {
+    // Extract the username from the query parameters
+    const { username } = req.query;
+
+    // Validate that the username is provided
+    if (!username) {
+      return res.status(400).send({ message: "Username is required" });
+    }
+
+    // Query the database to check if the username exists
+    const users = await DButils.execQuery("SELECT username FROM users WHERE username = ?", [username]);
+
+    // If the username exists, return a 409 conflict response
+    if (users.length > 0) {
+      return res.status(409).send({ message: "Username taken" });
+    }
+
+    // If the username does not exist, return a 200 OK response
+    res.status(200).send({ message: "Username available" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 router.post("/Register", async (req, res, next) => {
   try {
     // Extract and validate user details

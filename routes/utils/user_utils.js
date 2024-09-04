@@ -257,6 +257,22 @@ async function checkIsInMeal(user_id, recipe_id) {
     return rows.length > 0;
   }
 
+  async function markAsWatched(user_id, recipe_id){
+    await DButils.execQuery(`insert into watchedrecipes values ('${user_id}',${recipe_id}, CURRENT_TIMESTAMP) on duplicate key update watched_at=values(watched_at)`);
+}
+  async function getLastWatchedRecipes(user_id, number){
+    const recipes_id = await DButils.execQuery(`select recipe_id from watchedrecipes where user_id='${user_id}' order by watched_at desc limit ${number}`);
+    return recipes_id;
+}
+async function deleteAllWatchedRecipes(user_id) {
+  try {
+      await DButils.execQuery(`DELETE FROM watchedrecipes WHERE user_id='${user_id}'`);
+      console.log(`All watched recipes for user ${user_id} have been deleted.`);
+  } catch (error) {
+      console.error(`Error deleting watched recipes for user ${user_id}:`, error);
+  }
+}
+
 
 exports.markAsFavorite = markAsFavorite;
 exports.getFavoriteRecipes = getFavoriteRecipes;
@@ -278,3 +294,6 @@ exports.getRecipeServingAmount = getRecipeServingAmount;
 exports.setRecipeStepProgress = setRecipeStepProgress;
 exports.setRecipeProgress = setRecipeProgress;
 exports.resetAllMealProgressForUser = resetAllMealProgressForUser;
+exports.getLastWatchedRecipes = getLastWatchedRecipes;
+exports.markAsWatched = markAsWatched;
+exports.deleteAllWatchedRecipes = deleteAllWatchedRecipes;

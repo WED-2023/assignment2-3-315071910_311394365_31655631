@@ -2,6 +2,7 @@ var express = require("express");
 const axios = require("axios");
 var router = express.Router();
 const recipes_utils = require("./utils/recipes_utils.js");
+const user_utils = require("./utils/user_utils.js");
 const api_domain = "https://api.spoonacular.com/recipes";
 
 
@@ -53,9 +54,33 @@ router.get("/:recipeId", async (req, res, next) => {
 });
 
 
-/**
- * This path returns a full details of a recipe by its id
- */
+router.get("/FAMILY/:recipeId", async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    // if (user_id){
+    //   await user_utils.markAsWatched(user_id, req.params.recipeId);
+    // }
+    const recipe = await recipes_utils.getFamilyRecipeFullDetails(req.params.recipeId, user_id);
+    res.send(recipe);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/markwatched/:recipeId", async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    if (user_id){
+      await user_utils.markAsWatched(user_id, req.params.recipeId);
+    }
+    const recipe = await recipes_utils.getRecipeFullDetails(req.params.recipeId, user_id);
+    res.send(recipe);
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 router.get("/:recipeId/analyzedInstructions", async (req, res, next) => {
   try {
     const recipeInstructions = await recipes_utils.getRecipeFullInstructions(req.params.recipeId);
@@ -70,6 +95,16 @@ router.get("/:recipeId/formatted", async (req, res, next) => {
   try {
       const recipeId = req.params.recipeId;
       const recipeDetails = await recipes_utils.getFormattedRecipeDetails(recipeId);
+      res.json(recipeDetails);
+  } catch (error) {
+      next(error);
+  }
+});
+
+router.get("/FAMILY/:recipeId/formatted", async (req, res, next) => {
+  try {
+      const recipeId = req.params.recipeId;
+      const recipeDetails = await recipes_utils.getFormattedFamilyRecipeDetails(recipeId);
       res.json(recipeDetails);
   } catch (error) {
       next(error);
