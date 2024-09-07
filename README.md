@@ -36,13 +36,13 @@ The application is accessible at:
 
 ## 💡 Example Pages
 
-- **Search Page**: A dynamic interface for recipe discovery.
-  
-  ![Search Page](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/search.png?raw=true)
-
 - **Main Page**: Main page that contains 3 random recipes and last watched.
 
   ![Main Page](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/main_page.png?raw=true)
+  
+- **Search Page**: A dynamic interface for recipe discovery.
+  
+  ![Search Page](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/search.png?raw=true)
 
 - **Create New Recipe**: Add recipes to your personal collection.
 
