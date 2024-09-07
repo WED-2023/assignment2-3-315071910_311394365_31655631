@@ -54,7 +54,7 @@ The application is accessible at:
 
 - **Familiy Recipes**: Family Recepies page per user
 
-  ![Familiy Recipes][https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/create_recipe.png?raw=true)
+  ![Familiy Recipes](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/create_recipe.png?raw=true)
 
   
 ---
