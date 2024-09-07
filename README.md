@@ -47,7 +47,16 @@ The application is accessible at:
 - **Create New Recipe**: Add recipes to your personal collection.
 
   ![Create Recipe Page](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/create_recipe.png?raw=true)
+  
+- **Meal Plan**: Meal plan page which contains prepation meals.
 
+  ![Meal Plan](https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/create_recipe.png?raw=true)
+
+- **Familiy Recipes**: Family Recepies page per user
+
+  ![Familiy Recipes][https://github.com/WED-2023/assignment2-1-315071910_311394365_31655631/blob/main/photos/create_recipe.png?raw=true)
+
+  
 ---
 
 Enjoy managing and discovering new recipes with **Recipes Management Web Application**!
