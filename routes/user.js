@@ -94,7 +94,11 @@ router.get('/favorites', async (req, res, next) => {
       if (Number.isInteger(Number(recipes_id_array[i]))) {
         recipe_details = await recipe_utils.getRecipeDetailsToUser(user_id, recipes_id_array[i]);
       } else {
-        recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
+        if (recipes_id_array[i].substring(0, 6) === "FAMILY") {
+          recipe_details = await recipe_utils.getFamilyRecipeDetailsToUser(user_id, recipes_id_array[i]);
+        } else {
+          recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
+        }
       }
 
       recipes_favorites.push(recipe_details);
@@ -430,6 +434,33 @@ router.post('/resetAllMealPlan', async (req, res, next) => {
 //     next(error); 
 //   }
 // });
+
+// amit functions
+
+// router.get('/lastWatchedRecipes', async (req, res, next) => {
+//   try {
+//     const user_id = req.session.user_id;
+//     const recipes_id = await user_utils.getLastWatchedRecipes(user_id, 3);
+//     let recipes_id_array = [];
+//     let last_watched_recipes = [];
+
+//     // Extracting the recipe ids into an array
+//     recipes_id.map((element) => recipes_id_array.push(element.recipe_id));
+
+//     // Fetching detailed information for each recipe and getting preview details
+//     for (let i = 0; i < recipes_id_array.length; i++) {
+//       const recipeInfo = await recipe_utils.getRecipeInformation(recipes_id_array[i]);
+//       const recipePreview = await recipe_utils.getRecipesPreviewDetails([recipeInfo], user_id);
+//       last_watched_recipes.push(recipePreview[0]); // Since getRecipesPreviewDetails returns an array
+//     }
+
+//     res.send(last_watched_recipes);
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+
 router.get('/lastWatchedRecipes', async (req, res, next) => {
   try {
     const user_id = req.session.user_id;
@@ -442,16 +473,24 @@ router.get('/lastWatchedRecipes', async (req, res, next) => {
 
     // Fetching detailed information for each recipe and getting preview details
     for (let i = 0; i < recipes_id_array.length; i++) {
-      const recipeInfo = await recipe_utils.getRecipeInformation(recipes_id_array[i]);
-      const recipePreview = await recipe_utils.getRecipesPreviewDetails([recipeInfo], user_id);
-      last_watched_recipes.push(recipePreview[0]); // Since getRecipesPreviewDetails returns an array
+      if (Number.isInteger(Number(recipes_id_array[i]))) {
+        recipe_details = await recipe_utils.getRecipeDetailsToUser(user_id, recipes_id_array[i]);
+      } else {
+        if (recipes_id_array[i].substring(0, 6) === "FAMILY") {
+          recipe_details = await recipe_utils.getFamilyRecipeDetailsToUser(user_id, recipes_id_array[i]);
+        } else {
+          recipe_details = await user_utils.getMyRecipeByRecipeID(user_id, recipes_id_array[i]);
+        }
+      }
+      last_watched_recipes.push(recipe_details); // Since getRecipesPreviewDetails returns an array
     }
-
     res.send(last_watched_recipes);
   } catch (error) {
     next(error);
   }
 });
+
+
 
 router.delete('/deleteWatchedRecipes', async (req, res, next) => {
   try {
@@ -464,6 +503,23 @@ router.delete('/deleteWatchedRecipes', async (req, res, next) => {
     res.status(200).send({ message: "All watched recipes have been deleted." });
   } catch (error) {
     next(error); // Pass any errors to the error handling middleware
+  }
+});
+
+router.post("/markwatched/:recipeId", async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+    
+    if (!user_id) {
+      return res.status(401).send({ message: "Unauthorized: No user session" });
+    }
+
+    await user_utils.markAsWatched(user_id, req.params.recipeId);
+
+    // Send a success response
+    res.status(200).send({ message: "Recipe marked as watched successfully" });
+  } catch (error) {
+    next(error);  // Pass error to the error handler
   }
 });
 

@@ -1,21 +1,37 @@
 const DButils = require("./DButils");
 
 
-async function markAsFavorite(user_id, recipe_id){
-    await DButils.execQuery(`insert into favorite_recipes values ('${user_id}',${recipe_id})`);
+// async function markAsFavorite(user_id, recipe_id){
+//     await DButils.execQuery(`insert into favorite_recipes values ('${user_id}',${recipe_id})`);
+// }
+
+async function markAsFavorite(user_id, recipe_id) {
+  const query = `INSERT INTO favorite_recipes (user_id, recipe_id) VALUES (?, ?)`;
+  const values = [user_id, recipe_id];
+  
+  await DButils.execQuery(query, values);
 }
+
 
 async function getFavoriteRecipes(user_id){
     const recipes_id = await DButils.execQuery(`select recipe_id from favorite_recipes where user_id='${user_id}'`);
     return recipes_id;
 }
 
+// async function removeFavorite(user_id, recipe_id) {
+//     await DButils.execQuery(
+//       `DELETE FROM favorite_recipes WHERE user_id = ? AND recipe_id = ?`,
+//       [user_id, recipe_id]
+//     );
+// }
+
 async function removeFavorite(user_id, recipe_id) {
-    await DButils.execQuery(
-      `DELETE FROM favorite_recipes WHERE user_id = ? AND recipe_id = ?`,
-      [user_id, recipe_id]
-    );
+  const query = `DELETE FROM favorite_recipes WHERE user_id = ? AND recipe_id = ?`;
+  const values = [user_id, String(recipe_id)];  // Ensure recipe_id is a string
+  
+  await DButils.execQuery(query, values);
 }
+
 
 async function checkIsFavoriteRecipe(user_id, recipe_id){
     let favorite_recipes_id = await DButils.execQuery(`select recipe_id from favorite_recipes where user_id='${user_id}' and recipe_id='${recipe_id}'`)
@@ -23,6 +39,14 @@ async function checkIsFavoriteRecipe(user_id, recipe_id){
         return true;
     }
     return false;
+}
+
+async function checkIsRecipeWatched(user_id, recipe_id){
+  let favorite_recipes_id = await DButils.execQuery(`select recipe_id from watchedrecipes where user_id='${user_id}' and recipe_id='${recipe_id}'`)
+  if (favorite_recipes_id.length > 0){
+      return true;
+  }
+  return false;
 }
 
 async function addPersonalRecipe(user_id, recipe) {
@@ -82,7 +106,8 @@ async function getPersonalRecipes(user_id) {
       servings: recipe.servings,
       ingredients: JSON.parse(recipe.ingredients),
       instructions: JSON.parse(recipe.instructions),
-      isFavorite: await checkIsFavoriteRecipe(user_id, recipe.recipe_id)
+      isFavorite: await checkIsFavoriteRecipe(user_id, recipe.recipe_id),
+      watched: await checkIsRecipeWatched(user_id, recipe.recipe_id)
     })));
   }
 
@@ -108,7 +133,9 @@ async function getPersonalRecipes(user_id) {
       topIngredients: JSON.parse(recipe_details.topIngredients),
       topEquipment: JSON.parse(recipe_details.topEquipment),
       summary: recipe_details.summary,
-      isFavorite: await checkIsFavoriteRecipe(user_id, recipe_details.recipe_id)
+      isFavorite: await checkIsFavoriteRecipe(user_id, recipe_details.recipe_id),
+      watched: await checkIsRecipeWatched(user_id, recipe_details.recipe_id),
+      inMyMeal: await checkIsInMeal(user_id, recipe_details.recipe_id)
     };
   }
   
@@ -257,19 +284,49 @@ async function checkIsInMeal(user_id, recipe_id) {
     return rows.length > 0;
   }
 
-  async function markAsWatched(user_id, recipe_id){
-    await DButils.execQuery(`insert into watchedrecipes values ('${user_id}',${recipe_id}, CURRENT_TIMESTAMP) on duplicate key update watched_at=values(watched_at)`);
+//   async function markAsWatched(user_id, recipe_id){
+//     await DButils.execQuery(`insert into watchedrecipes values ('${user_id}',${recipe_id}, CURRENT_TIMESTAMP) on duplicate key update watched_at=values(watched_at)`);
+// }
+//   async function getLastWatchedRecipes(user_id, number){
+//     const recipes_id = await DButils.execQuery(`select recipe_id from watchedrecipes where user_id='${user_id}' order by watched_at desc limit ${number}`);
+//     return recipes_id;
+// }
+// async function deleteAllWatchedRecipes(user_id) {
+//   try {
+//       await DButils.execQuery(`DELETE FROM watchedrecipes WHERE user_id='${user_id}'`);
+//       console.log(`All watched recipes for user ${user_id} have been deleted.`);
+//   } catch (error) {
+//       console.error(`Error deleting watched recipes for user ${user_id}:`, error);
+//   }
+// }
+
+// Function to mark a recipe as watched
+async function markAsWatched(user_id, recipe_id) {
+  const query = `INSERT INTO watchedrecipes (user_id, recipe_id, watched_at) 
+                 VALUES (?, ?, CURRENT_TIMESTAMP) 
+                 ON DUPLICATE KEY UPDATE watched_at = VALUES(watched_at)`;
+  await DButils.execQuery(query, [user_id, recipe_id]);
 }
-  async function getLastWatchedRecipes(user_id, number){
-    const recipes_id = await DButils.execQuery(`select recipe_id from watchedrecipes where user_id='${user_id}' order by watched_at desc limit ${number}`);
-    return recipes_id;
+
+// Function to get the last watched recipes
+async function getLastWatchedRecipes(user_id, number) {
+  const query = `SELECT recipe_id 
+                 FROM watchedrecipes 
+                 WHERE user_id = ? 
+                 ORDER BY watched_at DESC 
+                 LIMIT ?`;
+  const recipes_id = await DButils.execQuery(query, [user_id, number]);
+  return recipes_id;
 }
+
+// Function to delete all watched recipes for a user
 async function deleteAllWatchedRecipes(user_id) {
   try {
-      await DButils.execQuery(`DELETE FROM watchedrecipes WHERE user_id='${user_id}'`);
-      console.log(`All watched recipes for user ${user_id} have been deleted.`);
+    const query = `DELETE FROM watchedrecipes WHERE user_id = ?`;
+    await DButils.execQuery(query, [user_id]);
+    console.log(`All watched recipes for user ${user_id} have been deleted.`);
   } catch (error) {
-      console.error(`Error deleting watched recipes for user ${user_id}:`, error);
+    console.error(`Error deleting watched recipes for user ${user_id}:`, error);
   }
 }
 
@@ -297,3 +354,4 @@ exports.resetAllMealProgressForUser = resetAllMealProgressForUser;
 exports.getLastWatchedRecipes = getLastWatchedRecipes;
 exports.markAsWatched = markAsWatched;
 exports.deleteAllWatchedRecipes = deleteAllWatchedRecipes;
+exports.checkIsRecipeWatched = checkIsRecipeWatched;

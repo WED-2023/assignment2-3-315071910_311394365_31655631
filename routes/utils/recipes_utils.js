@@ -37,6 +37,7 @@ async function getSearchRecipes(query, number, cuisine, diet, intolerance){
     return response.data;
 }
 
+// getting the recipe insormation as is from the API
 async function getRecipeInformation(recipe_id) {
     return await axios.get(`${api_domain}/${recipe_id}/information`, {
         params: {
@@ -46,6 +47,7 @@ async function getRecipeInformation(recipe_id) {
     });
 }
 
+// getting the recipe instructions as is from the API
 async function getRecipeFullInstructions(recipe_id) {
     const response = await axios.get(`${api_domain}/${recipe_id}/analyzedInstructions`, {
         params: {
@@ -105,12 +107,11 @@ async function getRecipeFullInstructions(recipe_id) {
 }
 
 
-
-
 async function getRecipeDetails(recipe_id) {
     let recipe_info = await getRecipeInformation(recipe_id);
     let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = recipe_info.data;
     let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+    let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
     return {
         id: id,
         title: title,
@@ -120,8 +121,8 @@ async function getRecipeDetails(recipe_id) {
         vegan: vegan,
         vegetarian: vegetarian,
         glutenFree: glutenFree,
-        favorite: isFavorite
-        
+        favorite: isFavorite,
+        watched: isWatched
     }
 }
 
@@ -130,6 +131,7 @@ async function getRecipeDetailsToUser(user_id, recipe_id) {
     let recipe_info = await getRecipeInformation(recipe_id);
     let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = recipe_info.data;
     let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+    let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
     return {
         id: id,
         title: title,
@@ -139,8 +141,8 @@ async function getRecipeDetailsToUser(user_id, recipe_id) {
         vegan: vegan,
         vegetarian: vegetarian,
         glutenFree: glutenFree,
-        favorite: isFavorite
-        
+        favorite: isFavorite,
+        watched: isWatched
     }
 }
 
@@ -163,6 +165,9 @@ async function getFamilyRecipeDetailsToUser(user_id, recipe_id) {
         // Check if the recipe is a favorite for the user
         let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
 
+        // Check if the recipe is watched by the user
+        let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
+
         // Return the processed recipe details
         return {
             id: id,
@@ -173,7 +178,8 @@ async function getFamilyRecipeDetailsToUser(user_id, recipe_id) {
             vegan: vegan,
             vegetarian: vegetarian,
             glutenFree: glutenFree,
-            favorite: isFavorite
+            favorite: isFavorite,
+            watched: isWatched
         };
     } catch (error) {
         // Handle any errors that occur during the process
@@ -223,7 +229,7 @@ async function getRecipesPreviewDetails(recipes_info, user_id) {
             data = recipe_info.data;
         }
         let { id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree } = data;
-        // let isWatched = await user_utils.checkIsWatchedRecipe(user_id, id);
+        let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
         let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
         return {
             id: id,
@@ -234,7 +240,7 @@ async function getRecipesPreviewDetails(recipes_info, user_id) {
             vegan: vegan,
             vegetarian: vegetarian,
             glutenFree: glutenFree,
-            // isWatched: isWatched,
+            watched: isWatched,
             isFavorite: isFavorite,
         }
     }))
@@ -284,8 +290,9 @@ async function getFamilyRecipeFullDetails(recipe_id, user_id) {
             servings
         } = information;
 
-        // Check if the recipe is a favorite or in the user's meal plan
+        // Check if the recipe is a favorite or in the user's meal plan or user watched in the recipe
         let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
+        let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
         let inMyMeal = await user_utils.checkIsInMeal(user_id, id);
 
         // Construct the ingredients list
@@ -312,7 +319,8 @@ async function getFamilyRecipeFullDetails(recipe_id, user_id) {
             instructions: analyzedInstructions,
             servings: servings,
             isFavorite: isFavorite,
-            inMyMeal: inMyMeal
+            inMyMeal: inMyMeal,
+            watched: isWatched
         };
     } catch (error) {
         console.error(`Error fetching recipe details: ${error.message}`);
@@ -321,17 +329,11 @@ async function getFamilyRecipeFullDetails(recipe_id, user_id) {
 }
 
 
-
-
-
-
-
-
 //get full recipe details by recipe_id
 async function getRecipeFullDetails(recipe_id, user_id) {
     let recipe_info = await getRecipeInformation(recipe_id);
     let {id, title, readyInMinutes, image, aggregateLikes, vegan, vegetarian, glutenFree,analyzedInstructions,extendedIngredients,servings} = recipe_info.data;
-    // let isWatched = await user_utils.checkIsWatchedRecipe(user_id, id);
+    let isWatched = await user_utils.checkIsRecipeWatched(user_id, id);
     let isFavorite = await user_utils.checkIsFavoriteRecipe(user_id, id);
     let inMyMeal = await user_utils.checkIsInMeal(user_id, id);
     // analyzedInstructions = getRecipeFullInstructions(recipe_id);
@@ -353,12 +355,11 @@ async function getRecipeFullDetails(recipe_id, user_id) {
             ingredients: ingredients_dict,
             instructions: analyzedInstructions,  
             servings: servings,
-            // isWatched: isWatched,
+            watched: isWatched,
             isFavorite: isFavorite, // there is a problem here with the boolean insert.
             inMyMeal:inMyMeal
         } 
 }
-
 
 
 /**
@@ -547,7 +548,10 @@ async function getFormattedFamilyRecipeDetails(recipe_id) {
     }
 }
 
-
+async function getFamilyRecipes(){
+    const recipes_id = await DButils.execQuery(`select recipe_id from family_recipes`);
+    return recipes_id;
+}
 
 
   module.exports = {
@@ -563,7 +567,8 @@ async function getFormattedFamilyRecipeDetails(recipe_id) {
     getRecipeInformation,
     getFamilyRecipeFullDetails,
     getFormattedFamilyRecipeDetails,
-    getFamilyRecipeDetailsToUser
+    getFamilyRecipeDetailsToUser,
+    getFamilyRecipes
 
 };
 // exports.getRecipeDetails = getRecipeDetails;

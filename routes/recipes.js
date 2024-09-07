@@ -37,6 +37,32 @@ router.get("/random", async (req, res, next) => {
 });
 
 
+router.get("/allFamily", async (req, res, next) => {
+  try {
+    const user_id = req.session.user_id;
+
+    if (!user_id) {
+      return res.status(401).send({ error: "User not logged in" });
+    }
+
+    // Fetch all family recipe IDs
+    const recipes_id = await recipes_utils.getFamilyRecipes();
+    const recipes_id_array = recipes_id.map(element => element.recipe_id);
+
+    // Fetch recipe details concurrently using Promise.all
+    const recipes_family = await Promise.all(
+      recipes_id_array.map(recipe_id => recipes_utils.getFamilyRecipeDetailsToUser(user_id, recipe_id))
+    );
+
+    // Send the result
+    res.status(200).send(recipes_family);
+  } catch (error) {
+    console.error("Error fetching family recipes:", error);
+    next(error);
+  }
+});
+
+
 /**
  * This path returns a full details of a recipe by its id
  */
@@ -67,18 +93,22 @@ router.get("/FAMILY/:recipeId", async (req, res, next) => {
   }
 });
 
-router.get("/markwatched/:recipeId", async (req, res, next) => {
-  try {
-    const user_id = req.session.user_id;
-    if (user_id){
-      await user_utils.markAsWatched(user_id, req.params.recipeId);
-    }
-    const recipe = await recipes_utils.getRecipeFullDetails(req.params.recipeId, user_id);
-    res.send(recipe);
-  } catch (error) {
-    next(error);
-  }
-});
+
+// router.get("/markwatched/:recipeId", async (req, res, next) => {
+//   try {
+//     const user_id = req.session.user_id;
+//     if (user_id){
+//       await user_utils.markAsWatched(user_id, req.params.recipeId);
+//     }
+//     const recipe = await recipes_utils.getRecipeFullDetails(req.params.recipeId, user_id);
+//     res.send(recipe);
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+
+
 
 
 router.get("/:recipeId/analyzedInstructions", async (req, res, next) => {
@@ -112,9 +142,9 @@ router.get("/FAMILY/:recipeId/formatted", async (req, res, next) => {
 });
 
 
-
-
 module.exports = router;
+
+
 /**
  * This path is for searching a recipe
  */
